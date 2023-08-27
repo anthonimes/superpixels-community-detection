@@ -14,7 +14,6 @@ except RuntimeError:
    pass
 
 from os import makedirs, path
-import datetime,time
 
 absolute_path = path.dirname(path.abspath(__file__))
 
@@ -25,18 +24,16 @@ dataset = sys.argv[1]
 folder = sys.argv[2]
 
 class Segment(object):
-    def __init__(self,dirpath,dataset,folder,stamp,radius,threshold):
+    def __init__(self,dirpath,dataset,folder,radius,threshold):
         self.dirpath            = dirpath
         self.weighted           = properties[0]
         self.radius             = radius
         self.threshold          = threshold
         self.dataset            = dataset
         self.folder             = folder
-        self.stamp              = stamp
-        print(self.dirpath)
 
     def __call__(self, filename):
-        utils.get_graphs(self.dirpath,filename,self.dataset,write=True,weighted=self.weighted,stamp=self.stamp,radius=self.radius,threshold=self.threshold)
+        utils.get_graphs(self.dirpath,filename,self.dataset,write=True,weighted=self.weighted,radius=self.radius,threshold=self.threshold)
 
 if __name__ == "__main__":
     dirpath,_,images = list(walk(absolute_path+"/dataset/"+dataset+"/images/"+folder))[0]
@@ -47,13 +44,9 @@ if __name__ == "__main__":
         threshold = properties[2]
         for r in radius:
             for t in threshold:
-                posix_now = time.time()
-                d = datetime.datetime.fromtimestamp(posix_now)
-                stamp = "".join(str(d).split(".")[:-1])
-                
                 makedirs(absolute_path+"/graphs/"+dataset+"/"+str(r)+"-"+str(t),exist_ok=True)
 
-                segment = Segment(dirpath,dataset,folder,stamp,r,t)
+                segment = Segment(dirpath,dataset,folder,r,t)
                 cs=1
                 if len(images) >= jobs:
                     cs=len(images)//jobs

@@ -44,7 +44,7 @@ def baseline_radius_graph(image,radius=10,sigma=125,threshold=.9):
 
     return vertices,arcs
 
-def study(name,dirpath,filename,dataset,number_of_regions=1000,write=True,stamp=None,radius=1,threshold=0.98):
+def study(name,dirpath,filename,dataset,number_of_regions=1000,write=True,radius=1,threshold=0.98):
     image_file = io.imread(dirpath+"/"+filename)
     image = img_as_float(image_file)
     image = (color.rgb2lab(image) + [0,128,128]) #// [1,1,1]
@@ -55,9 +55,9 @@ def study(name,dirpath,filename,dataset,number_of_regions=1000,write=True,stamp=
     merged_segmentation = numpy_merge(segmentation, image, number_of_regions)
     
     if(write):
-        output(name,dataset,filename,image_file,merged_segmentation,number_of_regions,stamp,radius,threshold)
+        output(name,dataset,filename,image_file,merged_segmentation,number_of_regions,radius,threshold)
 
-def get_graphs(dirpath,filename,dataset,write=True,weighted=True,stamp=None,radius=1,threshold=0):
+def get_graphs(dirpath,filename,dataset,write=True,weighted=True,radius=1,threshold=0):
     import networkx
     image_file = io.imread(dirpath+"/"+filename)
     image = image_file
@@ -72,7 +72,7 @@ def get_graphs(dirpath,filename,dataset,write=True,weighted=True,stamp=None,radi
     with open(absolute_path+"/graphs/"+dataset+"/"+str(radius)+"-"+str(threshold)+"/"+filename[:-4]+".pkl", "wb") as f:
         pickle.dump(G,f)
 
-def get_communities(community_detection,name,dirpath,filename,dataset,write=True,weighted=True,stamp=None,radius=1,threshold=0):
+def get_communities(community_detection,name,dirpath,filename,dataset,write=True,weighted=True,radius=1,threshold=0):
     import networkit
     image_file = io.imread(dirpath+"/"+filename)
     image = image_file
@@ -173,10 +173,10 @@ def numpy_merge(segmentation, image, number_of_regions):
 
                     return to_merge
 
-def output(name,dataset,filename,image,segmentation,number_of_regions,stamp,radius,threshold):
+def output(name,dataset,filename,image,segmentation,number_of_regions,radius,threshold):
     import csv
-    io.imsave(absolute_path+"/output/"+name+"/"+dataset+"/"+str(radius)+"/"+str(number_of_regions)+"/"+str(threshold)+"-"+stamp+"/"+filename[:-4]+".png",img_as_ubyte(mark_boundaries(img_as_float(image),segmentation,color=(0,0,0))))
-    with open(absolute_path+"/csv/"+name+"/"+dataset+"/"+str(radius)+"/"+str(number_of_regions)+"/"+str(threshold)+"-"+stamp+"/"+filename[:-4]+".csv", "w", newline='') as csvfile:
+    io.imsave(absolute_path+"/output/"+name+"/"+dataset+"/"+str(radius)+"-"+str(threshold)+"/"+str(number_of_regions)+"/"+filename[:-4]+".png",img_as_ubyte(mark_boundaries(img_as_float(image),segmentation,color=(0,0,0))))
+    with open(absolute_path+"/csv/"+name+"/"+dataset+"/"+str(radius)+"-"+str(threshold)+"/"+str(number_of_regions)+"/"+filename[:-4]+".csv", "w", newline='') as csvfile:
         segwriter = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
         for line in segmentation:
             segwriter.writerow(line)

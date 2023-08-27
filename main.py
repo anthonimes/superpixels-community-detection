@@ -14,7 +14,6 @@ except RuntimeError:
    pass
 
 from os import makedirs
-import datetime,time
 
 absolute_path = path.dirname(path.abspath(__file__))
 datasets = [
@@ -24,12 +23,14 @@ datasets = [
         #("NYUV2","test"),  
         #("SUNRGBD","test") 
 ]
+
+algorithms = ["LP","louvain","infomap"]
 radii = {"LP": [5], "louvain": [5], "infomap": [5]}
 graph_weight_thresholds = {"LP": [0.98], "louvain": [0.98], "infomap": [0.98]} 
 numbers_of_regions = [5000,2500,2000,1500,1000,800,600,400,200]
 
 class Segment(object):
-    def __init__(self,dirpath,algorithm,dataset,folder,number_of_regions,stamp,radius,threshold):
+    def __init__(self,dirpath,algorithm,dataset,folder,number_of_regions,radius,threshold):
         self.dirpath                     = dirpath
         self.algorithm                   = algorithm
         self.number_of_regions           = number_of_regions
@@ -37,29 +38,24 @@ class Segment(object):
         self.threshold                   = threshold
         self.dataset                     = dataset
         self.folder                      = folder
-        self.stamp                       = stamp
 
     def __call__(self, filename):
-        utils.study(self.algorithm,self.dirpath,filename,self.dataset,number_of_regions=self.number_of_regions,stamp=self.stamp,radius=self.radius,threshold=self.threshold)
+        utils.study(self.algorithm,self.dirpath,filename,self.dataset,number_of_regions=self.number_of_regions,radius=self.radius,threshold=self.threshold)
 
 if __name__ == "__main__":
     try:
         jobs = multiprocessing.cpu_count()-1
         pool = multiprocessing.Pool(jobs) # remove number to use all
-        for algorithm in radii:
+        for algorithm in algorithms:
             for dataset,folder in datasets:
                 dirpath,_,images = list(walk(absolute_path+"/dataset/"+dataset+"/images/"+folder))[0]
                 for radius in radii[algorithm]:
                     for graph_weight_threshold in graph_weight_thresholds[algorithm]:
                         for number_of_regions in numbers_of_regions:
-                            posix_now = time.time()
-                            d = datetime.datetime.fromtimestamp(posix_now)
-                            stamp = "".join(str(d).split(".")[:-1])
+                            makedirs(absolute_path+"/output/"+algorithm+"/"+dataset+"/"+str(radius)+"-"+str(graph_weight_threshold)+"/"+str(number_of_regions),exist_ok=True)
+                            makedirs(absolute_path+"/csv/"+algorithm+"/"+dataset+"/"+str(radius)+"-"+str(graph_weight_threshold)+"/"+str(number_of_regions),exist_ok=True)
 
-                            makedirs(absolute_path+"/output/"+algorithm+"/"+dataset+"/"+str(radius)+"/"+str(number_of_regions)+"/"+str(graph_weight_threshold)+"-"+stamp,exist_ok=True)
-                            makedirs(absolute_path+"/csv/"+algorithm+"/"+dataset+"/"+str(radius)+"/"+str(number_of_regions)+"/"+str(graph_weight_threshold)+"-"+stamp,exist_ok=True)
-
-                            segment = Segment(dirpath,algorithm,dataset,folder,number_of_regions,stamp,radius,graph_weight_threshold)
+                            segment = Segment(dirpath,algorithm,dataset,folder,number_of_regions,radius,graph_weight_threshold)
                             cs=1
                             if len(images) >= jobs:
                                 cs=len(images)//jobs

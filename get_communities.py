@@ -14,7 +14,6 @@ except RuntimeError:
    pass
 
 absolute_path = path.dirname(path.abspath(__file__))
-import datetime,time
 
 dataset = sys.argv[1]
 folder = sys.argv[2]
@@ -22,22 +21,21 @@ folder = sys.argv[2]
 # function, weighted graph, radii and threshold
 algorithms_properties = { 
         "LP": (utils.LP,[5],[0.98]), 
-        "louvain": (utils.louvain,[10],[0.98]), 
+        "louvain": (utils.louvain,[5],[0.98]), 
         "infomap": (utils.infomap,[5],[0.98]), 
         }
 
 class Segment(object):
-    def __init__(self,dirpath,algorithm,dataset,stamp,radius,threshold):
+    def __init__(self,dirpath,algorithm,dataset,radius,threshold):
         self.dirpath            = dirpath
         self.algorithm          = algorithm
         self.function           = algorithms_properties[algorithm][0]
         self.radius             = radius
         self.threshold          = threshold
         self.dataset            = dataset
-        self.stamp              = stamp
 
     def __call__(self, filename):
-        utils.get_communities(self.function,self.algorithm,self.dirpath,filename,self.dataset,stamp=self.stamp,radius=self.radius,threshold=self.threshold)
+        utils.get_communities(self.function,self.algorithm,self.dirpath,filename,self.dataset,radius=self.radius,threshold=self.threshold)
 
 if __name__ == "__main__":
     dirpath,_,images = list(walk(absolute_path+"/dataset/"+dataset+"/images/"+folder))[0]
@@ -50,12 +48,9 @@ if __name__ == "__main__":
             threshold = algorithms_properties[algorithm][2]
             for r in radius:
                 for t in threshold:
-                    posix_now = time.time()
-                    d = datetime.datetime.fromtimestamp(posix_now)
-                    stamp = "".join(str(d).split(".")[:-1])
                     makedirs(absolute_path+"/communities/"+algorithm+"/"+dataset+"/"+str(r)+"-"+str(t),exist_ok=True)
 
-                    segment = Segment(dirpath,algorithm,dataset,stamp,r,t)
+                    segment = Segment(dirpath,algorithm,dataset,r,t)
                     cs=1
                     if len(images) >= jobs:
                         cs=len(images)//jobs
