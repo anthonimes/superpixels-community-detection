@@ -59,7 +59,7 @@ def study(function,name,dirpath,filename,dataset,number_of_regions=1000,write=Tr
     if(write):
         output(name,dataset,filename,image_file,merged_segmentation,threshold_merge,stamp,radius,threshold)
 
-def get_graphs(method,name,dirpath,filename,dataset,write=False,weighted=True,stamp=None,radius=1,threshold=0):
+def get_graphs(dirpath,filename,dataset,write=False,weighted=True,stamp=None,radius=1,threshold=0):
     import networkx
     image_file = io.imread(dirpath+"/"+filename)
     image = image_file
@@ -74,7 +74,7 @@ def get_graphs(method,name,dirpath,filename,dataset,write=False,weighted=True,st
     with open(absolute_path+"/graphs/"+dataset+"/"+str(radius)+"-"+str(threshold)+"/"+filename[:-4]+".pkl", "wb") as f:
         pickle.dump(G,f)
 
-def get_communities(method,name,dirpath,filename,dataset,write=False,weighted=True,stamp=None,radius=1,threshold=0):
+def get_communities(community_detection,name,dirpath,filename,dataset,write=False,weighted=True,stamp=None,radius=1,threshold=0):
     import networkit
     image_file = io.imread(dirpath+"/"+filename)
     image = image_file
@@ -84,7 +84,7 @@ def get_communities(method,name,dirpath,filename,dataset,write=False,weighted=Tr
     with open(absolute_path+"/graphs/"+dataset+"/"+str(radius)+"-"+str(threshold)+"/"+filename[:-4]+".pkl", "rb") as f:
         G = pickle.load(f)
 
-    initial_segmentation = method(G,image)
+    initial_segmentation = community_detection(G,image)
     
     # --- DEV --- output men region size after merging
     if(write):

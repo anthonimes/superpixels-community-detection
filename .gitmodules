@@ -1,0 +1,3 @@
+[submodule "dataset/superpixel-benchmark-data"]
+	path = dataset/superpixel-benchmark-data
+	url = git@github.com:davidstutz/superpixel-benchmark-data.git

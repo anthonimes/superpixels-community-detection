@@ -18,7 +18,7 @@ import datetime,time
 
 absolute_path = path.dirname(path.abspath(__file__))
 datasets = [ 
-        ("BSR","test"),
+        ("BSDS","test"),
         #("SBD","test"), 
         #("NYUV2","test"),  
         #("SUNRGBD","test") 
