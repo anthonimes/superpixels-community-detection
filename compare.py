@@ -78,7 +78,10 @@ if __name__ == "__main__":
                     filepath = pathfolder+"/"+merge_csv_folder+".csv"
 
                     segment = Segment(images_path,name,compare_datasets[dataset],dataset,folder,path_csv)
-                    results = pool.map(segment, images,chunksize=len(images)//jobs)
+                    cs=1
+                    if(len(images) >= jobs):
+                        cs=len(images)//jobs
+                    results = pool.map(segment, images,chunksize=cs)
                     
                     with open(filepath, "w", newline='') as csvfile:
                         segwriter = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
