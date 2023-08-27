@@ -43,7 +43,7 @@ class Segment(object):
         return None
 
 if __name__ == "__main__":
-    dirpath,_,images = list(walk("/data/perez/superpixels/dataset/"+dataset+"/images/"+folder))[0]
+    dirpath,_,images = list(walk(absolute_path+"/dataset/"+dataset+"/images/"+folder))[0]
     try:
         # --- DEV --- open image here in order to compute RGB and Lab
         jobs = multiprocessing.cpu_count()-1
@@ -56,7 +56,7 @@ if __name__ == "__main__":
                     posix_now = time.time()
                     d = datetime.datetime.fromtimestamp(posix_now)
                     stamp = "".join(str(d).split(".")[:-1])
-                    makedirs("/data/perez/superpixels/communities/"+name+"/"+dataset+"/"+str(r)+"-"+str(t),exist_ok=True)
+                    makedirs(absolute_path+"/"+name+"/"+dataset+"/"+str(r)+"-"+str(t),exist_ok=True)
 
                     segment = Segment(dirpath,algorithm,dataset,folder,stamp,r,t)
                     results = pool.map_async(segment, sorted(images), chunksize=len(images)//jobs)

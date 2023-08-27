@@ -51,7 +51,7 @@ if __name__ == "__main__":
                     d = datetime.datetime.fromtimestamp(posix_now)
                     stamp = "".join(str(d).split(".")[:-1])
                     
-                    makedirs("/data/perez/superpixels/graphs/"+dataset+"/"+str(r)+"-"+str(t),exist_ok=True)
+                    makedirs(absolute_path+"/graphs/"+dataset+"/"+str(r)+"-"+str(t),exist_ok=True)
 
                     segment = Segment(dirpath,dataset,folder,stamp,r,t)
                     results = pool.map_async(segment, sorted(images), chunksize=len(images)//jobs)
