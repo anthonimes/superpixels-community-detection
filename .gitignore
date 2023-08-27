@@ -138,7 +138,5 @@ dmypy.json
 cython_debug/
 
 # folders
-output/
-csv/
 communities/
 graphs/
