@@ -17,8 +17,10 @@
 ```
 infomap=2.7.1
 networkit=10.1
+matplotlib=3.8.0 
 networkx=2.8.4
-numpy=1.25.0
+numpy=1.23.5
+pandas=2.1.4
 scikit-image=0.20.0
 ```
 Pour une installation avec `conda` (par exemple `conda create -n NAME --file requirements.txt`) :
@@ -29,7 +31,7 @@ conda-forge::infomap=2.7.1
 matplotlib=3.8.0 
 conda-forge::networkit=10.1
 networkx=2.8.4
-numpy=1.25.0
+numpy=1.23.5
 pandas=2.1.4
 scikit-image=0.20.0
 ```
