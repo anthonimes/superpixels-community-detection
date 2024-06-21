@@ -44,7 +44,7 @@ class Segment(object):
 
 if __name__ == "__main__":
     try:
-        jobs = multiprocessing.cpu_count()-1
+        jobs = multiprocessing.cpu_count()//2
         pool = multiprocessing.Pool(jobs) # remove number to use all
         for algorithm in algorithms:
             for dataset,folder in datasets:
