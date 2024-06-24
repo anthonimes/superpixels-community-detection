@@ -1,6 +1,7 @@
 from statistics import mean
 from math import sqrt,floor
 from os import path
+from skimage import io
 
 import numpy
 
