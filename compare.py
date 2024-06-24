@@ -35,6 +35,7 @@ absolute_path = path.dirname(path.abspath(__file__))
 
 # groundtruth method, groundtruth extension, several groundtruth?
 compare_datasets = {
+        "example": (metrics._get_groundtruth_BSDS,".mat",True), \
         "BSDS": (metrics._get_groundtruth_BSDS,".mat",True), \
         "NYUV2": (metrics._get_groundtruth_csv,".csv",False), \
         "SUNRGBD": (metrics._get_groundtruth_csv,".csv",False), \
@@ -64,36 +65,38 @@ if __name__ == "__main__":
         pool = multiprocessing.Pool(jobs) # remove number to use all
 
         for radius_folder in radii_folders:
+            print(radius_folder)
             csv_folders = list(walk(csv_path+"/"+radius_folder))[0][1]
-            for csv_folder in csv_folders:
-                print("dealing with folder {}".format(csv_path+"/"+radius_folder+"/"+csv_folder))
-                merge_csv_folders = list(walk(csv_path+"/"+radius_folder+"/"+csv_folder))[0][1]
-                for merge_csv_folder in merge_csv_folders:
-                    pathfolder=absolute_path+"/results/"+name+"/"+dataset+"/"
-                    pathfolder+="/".join((path_to_segmentations.split("/"))[7:])+"/"+radius_folder+"/"+csv_folder
-                    makedirs(pathfolder,exist_ok=True)
+            for merge_csv_folder in csv_folders:
+                print("dealing with folder {}".format(csv_path+"/"+radius_folder+"/"+merge_csv_folder))
+                #merge_csv_folders = list(walk(csv_path+"/"+radius_folder+"/"+csv_folder))[0][1]
+                #for merge_csv_folder in merge_csv_folders:
+                pathfolder=absolute_path+"/results/"+name+"/"+dataset+"/"
+                pathfolder+=radius_folder+"/"+merge_csv_folder
+                print(pathfolder)
+                makedirs(pathfolder,exist_ok=True)
 
-                    path_csv="/"
-                    path_csv+="/".join((path_to_segmentations.split("/"))[1:-1])+"/"+"/"+radius_folder+"/"+csv_folder+"/"+merge_csv_folder
-                    filepath = pathfolder+"/"+merge_csv_folder+".csv"
+                path_csv=absolute_path+"/"+path_to_segmentations+"/"+radius_folder+"/"+merge_csv_folder#+"/"+merge_csv_folder
+                filepath = pathfolder+".csv"
+                print(path_csv)
 
-                    segment = Segment(images_path,name,compare_datasets[dataset],dataset,folder,path_csv)
-                    cs=1
-                    if(len(images) >= jobs):
-                        cs=len(images)//jobs
-                    results = pool.map(segment, images,chunksize=cs)
-                    
-                    with open(filepath, "w", newline='') as csvfile:
-                        segwriter = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                segment = Segment(images_path,name,compare_datasets[dataset],dataset,folder,path_csv)
+                cs=1
+                if(len(images) >= jobs):
+                    cs=len(images)//jobs
+                results = pool.map(segment, images,chunksize=cs)
+                
+                with open(filepath, "w", newline='') as csvfile:
+                    segwriter = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
 
-                        if(dataset in ["BSDS"]):
-                            segwriter.writerow(("filename","segments","ue","max_ue","min_ue","asa","min_asa","max_asa","br","min_br","max_br","bp","min_bp","max_bp","ev","ev_rgb","compactness_value"))
-                            for r in results:
-                                segwriter.writerow(r)
-                        else:
-                            segwriter.writerow(("filename","segments","ue","asa","br","bp","ev","ev_rgb","compactness_value"))
-                            for r in results:
-                                segwriter.writerow([r[0],r[1],r[2],r[5],r[8],r[11],r[14],r[15],r[16]])
+                    if(dataset in ["BSDS"]):
+                        segwriter.writerow(("filename","segments","ue","max_ue","min_ue","asa","min_asa","max_asa","br","min_br","max_br","bp","min_bp","max_bp","ev","ev_rgb","compactness_value"))
+                        for r in results:
+                            segwriter.writerow(r)
+                    else:
+                        segwriter.writerow(("filename","segments","ue","asa","br","bp","ev","ev_rgb","compactness_value"))
+                        for r in results:
+                            segwriter.writerow([r[0],r[1],r[2],r[5],r[8],r[11],r[14],r[15],r[16]])
 
     finally: # To make sure processes are closed in the end, even if errors happen
         pool.close()
