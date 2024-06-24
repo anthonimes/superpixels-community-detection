@@ -1,7 +1,7 @@
 from statistics import mean
 from math import sqrt,floor
 from os import path
-from skimage import io
+from skimage import io, color
 from skimage.util import img_as_float
 
 import numpy
