@@ -209,7 +209,7 @@ def compare(filename,segmentation,compute_groundtruth,gt_extension,dirpath,datas
     image = img_as_float(image_file)
     image = (color.rgb2lab(image) + [0,128,128]) #// [1,1,1]
     uenp,asa,br,ev=0,0,0,0
-    gt = compute_groundtruth(absolute_path+"/"+dataset+"/groundTruth/"+folder+"/"+filename[:-4]+gt_extension)
+    gt = compute_groundtruth(absolute_path+"/dataset/"+dataset+"/groundTruth/"+folder+"/"+filename[:-4]+gt_extension)
 
     if(several_gt==True):
         measures = [ (USE_ASA(gt[i],segmentation,image),boundary_recall(segmentation,gt[i])) for i in range(len(gt)) ] 
@@ -219,7 +219,8 @@ def compare(filename,segmentation,compute_groundtruth,gt_extension,dirpath,datas
     uenp=[e[0][0] for e in measures]
     asa=[e[0][1] for e in measures]
     br=[e[1] for e in measures]
-    bp=[e[2] for e in measures]
+    bp=[0]
+    #bp=[e[2] for e in measures]
     ev=EV(segmentation,image)
     ev_rgb = EV(segmentation,image_file)
     compactness_value = compactness(segmentation,image_file)
