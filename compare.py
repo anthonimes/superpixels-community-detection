@@ -77,7 +77,7 @@ if __name__ == "__main__":
                 makedirs(pathfolder,exist_ok=True)
 
                 path_csv=absolute_path+"/"+path_to_segmentations+"/"+radius_folder+"/"+merge_csv_folder#+"/"+merge_csv_folder
-                filepath = pathfolder+".csv"
+                filepath = pathfolder+"/"+merge_csv_folder+".csv"
                 print(path_csv)
 
                 segment = Segment(images_path,name,compare_datasets[dataset],dataset,folder,path_csv)
