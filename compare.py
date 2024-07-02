@@ -15,6 +15,7 @@ dataset                 = sys.argv[1]
 folder                  = sys.argv[2]
 path_to_segmentations   = sys.argv[3]
 name                    = sys.argv[4]
+result_file_name        = sys.argv[5]
 
 try:
    multiprocessing.set_start_method('spawn', force=True)
@@ -67,17 +68,26 @@ if __name__ == "__main__":
         for radius_folder in radii_folders:
             print(radius_folder)
             csv_folders = list(walk(csv_path+"/"+radius_folder))[0][1]
+
+            pathfolder=absolute_path+"/results/"+name+"/"+dataset+"/"
+            pathfolder+=radius_folder
+            print(pathfolder)
+            makedirs(pathfolder,exist_ok=True)
+            filepath = pathfolder+"/"+result_file_name+".csv"
+
+            with open(filepath, "w", newline='') as csvfile:
+                segwriter = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
+
+                if(dataset in ["BSDS"]):
+                    segwriter.writerow(("filename","segments","ue","max_ue","min_ue","asa","min_asa","max_asa","br","min_br","max_br","bp","min_bp","max_bp","ev","ev_rgb","compactness_value"))
+
+                else:
+                    segwriter.writerow(("filename","segments","ue","asa","br","bp","ev","ev_rgb","compactness_value"))
+
             for merge_csv_folder in csv_folders:
                 print("dealing with folder {}".format(csv_path+"/"+radius_folder+"/"+merge_csv_folder))
-                #merge_csv_folders = list(walk(csv_path+"/"+radius_folder+"/"+csv_folder))[0][1]
-                #for merge_csv_folder in merge_csv_folders:
-                pathfolder=absolute_path+"/results/"+name+"/"+dataset+"/"
-                pathfolder+=radius_folder+"/"+merge_csv_folder
-                print(pathfolder)
-                makedirs(pathfolder,exist_ok=True)
 
                 path_csv=absolute_path+"/"+path_to_segmentations+"/"+radius_folder+"/"+merge_csv_folder#+"/"+merge_csv_folder
-                filepath = pathfolder+"/"+merge_csv_folder+".csv"
                 print(path_csv)
 
                 segment = Segment(images_path,name,compare_datasets[dataset],dataset,folder,path_csv)
@@ -86,17 +96,26 @@ if __name__ == "__main__":
                     cs=len(images)//jobs
                 results = pool.map(segment, images,chunksize=cs)
                 
-                with open(filepath, "w", newline='') as csvfile:
+                with open(filepath, "a", newline='') as csvfile:
                     segwriter = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
 
                     if(dataset in ["BSDS"]):
-                        segwriter.writerow(("filename","segments","ue","max_ue","min_ue","asa","min_asa","max_asa","br","min_br","max_br","bp","min_bp","max_bp","ev","ev_rgb","compactness_value"))
                         for r in results:
                             segwriter.writerow(r)
                     else:
-                        segwriter.writerow(("filename","segments","ue","asa","br","bp","ev","ev_rgb","compactness_value"))
                         for r in results:
                             segwriter.writerow([r[0],r[1],r[2],r[5],r[8],r[11],r[14],r[15],r[16]])
+
+            with open(filepath, "r", newline='') as csvfile:
+                reader = csv.reader(csvfile, delimiter=",")
+                headers = next(reader)
+                sortedlist = sorted(reader, key=lambda row: int(row[1]))
+
+            with open(filepath, 'w') as csvfile:
+                segwriter = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                segwriter.writerow(headers)
+                for row in sortedlist:
+                    segwriter.writerow(row)
 
     finally: # To make sure processes are closed in the end, even if errors happen
         pool.close()

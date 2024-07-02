@@ -12,6 +12,8 @@
 
 > python main.py
 
+> python compare.py example test csv/infomap/example infomap ex_name
+
 # Requirements
 
 ```
