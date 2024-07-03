@@ -47,7 +47,7 @@ def baseline_radius_graph(image,radius=10,sigma=125,threshold=.9):
 
     return vertices,arcs
 
-def study(name,dirpath,filename,dataset,number_of_regions=1000,write=True,radius=1,threshold=0.98):
+def study(name,dirpath,filename,dataset,numbers_of_regions=[1000],write=True,radius=1,threshold=0.98):
     image_file = io.imread(dirpath+"/"+filename)
     image = img_as_float(image_file)
     image = (color.rgb2lab(image) + [0,128,128]) #// [1,1,1]
@@ -55,10 +55,10 @@ def study(name,dirpath,filename,dataset,number_of_regions=1000,write=True,radius
     with open(absolute_path+"/communities/"+name+"/"+dataset+"/"+str(radius)+"-"+str(threshold)+"/"+filename[:-4]+".pkl", "rb") as f:
         segmentation = pickle.load(f)
     
-    merged_segmentation = numpy_merge(segmentation, image, number_of_regions)
+    merged_segmentation = numpy_small_to_large_merge(segmentation, image, numbers_of_regions)
     
     if(write):
-        output(name,dataset,filename,image_file,merged_segmentation,number_of_regions,radius,threshold)
+        output(name,dataset,filename,image_file,merged_segmentation,numbers_of_regions,radius,threshold)
 
 def get_graphs(dirpath,filename,dataset,write=True,weighted=True,radius=1,threshold=0):
     import networkx
@@ -134,109 +134,87 @@ def infomap(G,image):
 
     return initial_segmentation
 
-def numpy_merge(segmentation, image, number_of_regions):
+def numpy_small_to_large_merge(segmentation, image, numbers_of_regions):
     to_merge = numpy.copy(segmentation)
-    min_size = (image.shape[0]*image.shape[1])//number_of_regions
+    merge_result = {}
+    avg_expected_size = (image.shape[0]*image.shape[1])//min(numbers_of_regions)
 
     g = graph.rag_mean_color(image,to_merge,connectivity=1,mode='similarity',sigma=125)
 
+    # create a dictionary which holds a list of regions to consider for each size
     reg = [(len(to_merge[to_merge==r]), r) for r in g.nodes]
     r1 = defaultdict(list)
     for k, v in reg:
         r1[k].append(v)
     regions = dict((k, v) for k, v in r1.items())
 
+    # dictionary used to keep track of whether a region still exists or not
     labels = dict.fromkeys(numpy.unique(to_merge))
 
-    keys = sorted(regions.keys())
-
+    # dictionary used to solve region name change issues
     close_dict = dict()
-    for k in range(keys[0], keys[-1]*5):
-        if k in regions.keys():
-            if math.log(k, 2).is_integer():
+
+    for k in range(1, avg_expected_size):
+
+        if k in regions.keys(): # check if there is someone of this size (useful for big sizes mostly)
+
+            if math.log(k, 2).is_integer(): # don't want to have to re-create the graph too often because it takes time
                 g = graph.rag_mean_color(image,to_merge,connectivity=1,mode='similarity',sigma=125)
-            for region in sorted(list(set(regions[k]))):
-                if len(to_merge[to_merge==region]) == k:
-                    closest = max([(v,g[region][v]['weight']) for v in g.neighbors(region)],key=lambda x: x[1])
 
-                    c = closest[0]
-                    if len(to_merge[to_merge==c]) == 0:
-                        while not len(to_merge[to_merge==c]) != 0:
-                            c = close_dict[c]
-                    if len(to_merge[to_merge==region]) + len(to_merge[to_merge==c]) < 2*k:
-                        print(region, len(to_merge[to_merge==region]), closest, len(to_merge[to_merge==c]))
+            # remove the regions that are in the wrong category
+            filtered_regions = list(filter(lambda x: len(to_merge[to_merge==x]) == k, list(set(regions[k]))))
 
-                    close_dict[region] = c
-                    to_merge[to_merge==region] = c
-                    l = len(to_merge[to_merge==c])
+            for region in sorted(filtered_regions):
 
-                    if l not in regions.keys():
-                        regions[l] = [c]
-                    else:
-                        regions[l].append(c)
+                closest = max([(v,g[region][v]['weight']) for v in g.neighbors(region)],key=lambda x: x[1])
 
-                    if(region in labels.keys()):
-                        labels.pop(region)
-                        labels[c]=None
-                    if(len(labels)<=number_of_regions):
-                        unique, to_merge = numpy.unique(to_merge,return_inverse=1)
-                        to_merge=(1+to_merge).reshape((image.shape[0],image.shape[1]))
+                # look for the closest region, even if its name has changed
+                c = closest[0]
+                if len(to_merge[to_merge==c]) == 0:
+                    while not len(to_merge[to_merge==c]) != 0:
+                        c = close_dict[c]
+                if len(to_merge[to_merge==region]) + len(to_merge[to_merge==c]) < 2*k:
+                    print(region, len(to_merge[to_merge==region]), closest, len(to_merge[to_merge==c]))
 
-                        return to_merge
+                # merge the regions
+                close_dict[region] = c
+                to_merge[to_merge==region] = c
+                l = len(to_merge[to_merge==c])
+
+                # put the new region back in the "waiting list", to be considered again later
+                if l not in regions.keys():
+                    regions[l] = [c]
+                else:
+                    regions[l].append(c)
+
+                # keep track of who has been deleted
+                if(region in labels.keys()):
+                    labels.pop(region)
+                    labels[c]=None
+                
+                # end
+                if(len(labels) in numbers_of_regions):
+                    t_m = numpy.copy(to_merge)
+                    unique, t_m = numpy.unique(t_m,return_inverse=1)
+                    t_m=(1+t_m).reshape((image.shape[0],image.shape[1]))
+
+                    merge_result[len(labels)] = numpy.copy(t_m)
+
+                    if (len(labels) == min(numbers_of_regions)):
+                        return merge_result
+
             regions.pop(k)
+
+    # in case of failure
     unique, to_merge = numpy.unique(to_merge,return_inverse=1)
     print("FAIL nb regions ", len(unique))
     print(regions)
-    
-    """
-    labels = dict.fromkeys(numpy.unique(to_merge))
-    # Merging small-sized regions first
-    while(True):
-        merged=False
-        g = graph.rag_mean_color(image,to_merge,connectivity=1,mode='similarity',sigma=125)
 
-        # NOTE POUR JOANNE: ce qui se passe c'est que ça boucle à mort là-dedans (à chaque fois qu'il reste une région assez petite, on fait un tour).
-        # On va faire des groupes de taille pour les régions: commencer par les 1, et les transférer dans la liste des x quand elles sont fusionnées, puis les 2, etc.
-        for region in sorted(g.nodes):
-            counter += 1
-            #print(counter, " 1 ", len(labels))
-            if(len(to_merge[to_merge==region])<=(min_size//10)):
-                merged=True
-                closest = max([(v,g[region][v]['weight']) for v in g.neighbors(region)],key=lambda x: x[1])
-                to_merge[to_merge==region] = closest[0]
-                if(region in labels.keys()):
-                    labels.pop(region)
-                    labels[closest[0]]=None
-                if(len(labels)<=number_of_regions):
-                    _, to_merge = numpy.unique(to_merge,return_inverse=1)
-                    to_merge=(1+to_merge).reshape((image.shape[0],image.shape[1]))
-
-                    return to_merge
-        if(merged):
-            continue
-        break
-    
-    while(True):
-        g = graph.rag_mean_color(image,to_merge,connectivity=1,mode='similarity',sigma=125)
-
-        for region in sorted(g.nodes):
-            if(len(to_merge[to_merge==region])<=min_size):
-                closest = max([(v,g[region][v]['weight']) for v in g.neighbors(region)],key=lambda x: x[1])
-                to_merge[to_merge==region] = closest[0]
-                if(region in labels.keys()):
-                    labels.pop(region)
-                    labels[closest[0]]=None
-                if(len(labels)<=number_of_regions):
-                    _, to_merge = numpy.unique(to_merge,return_inverse=1)
-                    to_merge=(1+to_merge).reshape((image.shape[0],image.shape[1]))
-
-                    return to_merge
-    """
-
-def output(name,dataset,filename,image,segmentation,number_of_regions,radius,threshold):
+def output(name,dataset,filename,image,segmentation,numbers_of_regions,radius,threshold):
     import csv
-    io.imsave(absolute_path+"/output/"+name+"/"+dataset+"/"+str(radius)+"-"+str(threshold)+"/"+str(number_of_regions)+"/"+filename[:-4]+".png",img_as_ubyte(mark_boundaries(img_as_float(image),segmentation,color=(0,0,0))))
-    with open(absolute_path+"/csv/"+name+"/"+dataset+"/"+str(radius)+"-"+str(threshold)+"/"+str(number_of_regions)+"/"+filename[:-4]+".csv", "w", newline='') as csvfile:
-        segwriter = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        for line in segmentation:
-            segwriter.writerow(line)
+    for number_of_regions in numbers_of_regions:
+        io.imsave(absolute_path+"/output/"+name+"/"+dataset+"/"+str(radius)+"-"+str(threshold)+"/"+str(number_of_regions)+"/"+filename[:-4]+".png",img_as_ubyte(mark_boundaries(img_as_float(image),segmentation[number_of_regions],color=(0,0,0))))
+        with open(absolute_path+"/csv/"+name+"/"+dataset+"/"+str(radius)+"-"+str(threshold)+"/"+str(number_of_regions)+"/"+filename[:-4]+".csv", "w", newline='') as csvfile:
+            segwriter = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
+            for line in segmentation[number_of_regions]:
+                segwriter.writerow(line)
